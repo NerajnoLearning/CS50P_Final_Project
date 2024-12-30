@@ -108,4 +108,4 @@ Potential improvements could include:
 
 ## License
 
-[Specify your license here]
+MIT
