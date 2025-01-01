@@ -20,6 +20,22 @@ class Tool:
     def __repr__(self):
         return f"Tool({self.name}, {self.category}, {self.serial_number}, {self.purchase_date}, {self.current_condition})"
 
+def generate_short_id():
+    """Generate a 5-character unique identifier."""
+    return str(uuid.uuid4())[:5]
+
+def find_tool_by_name_or_id(identifier):
+    """Find a tool by either name or ID."""
+    # First try to find by ID
+    if identifier in tools_db:
+        return identifier
+
+    # Then try to find by name
+    for tool_id, tool in tools_db.items():
+        if tool.name.lower() == identifier.lower():
+            return tool_id
+    return None
+
 def add_tool(name, category, serial_number, purchase_date, condition):
     """Creates a registry of a new tool in the system."""
     for tool in tools_db.values():
@@ -27,24 +43,32 @@ def add_tool(name, category, serial_number, purchase_date, condition):
             raise ValueError("Tool with this serial number already exists.")
 
     new_tool = Tool(name, category, serial_number, purchase_date, condition)
-    new_tool.tool_id = str(uuid.uuid4())
+    new_tool.tool_id = generate_short_id()
+    # Ensure ID uniqueness
+    while new_tool.tool_id in tools_db:
+        new_tool.tool_id = generate_short_id()
+
     tools_db[new_tool.tool_id] = new_tool
     return new_tool.tool_id
 
-def remove_tool(tool_id):
-    """Remove a tool from the system."""
-    if tool_id not in tools_db:
+def remove_tool(identifier):
+    """Remove a tool from the system using either name or ID."""
+    tool_id = find_tool_by_name_or_id(identifier)
+    if not tool_id:
         raise ValueError("Tool not found.")
+    tool_name = tools_db[tool_id].name
     del tools_db[tool_id]
-    print(f"Tool with ID {tool_id} has been removed.")
+    print(f"Tool '{tool_name}' (ID: {tool_id}) has been removed.")
 
-def track_tool_usage(tool_id, user, checkout_time, expected_return_time):
-    """Track tool usage and log user information."""
-    if tool_id not in tools_db:
+def track_tool_usage(identifier, user, checkout_time, expected_return_time):
+    """Track tool usage and log user information using either name or ID."""
+    tool_id = find_tool_by_name_or_id(identifier)
+    if not tool_id:
         raise ValueError("Tool not found.")
 
     usage_entry = {
         "tool_id": tool_id,
+        "tool_name": tools_db[tool_id].name,
         "user": user,
         "checkout_time": checkout_time,
         "expected_return_time": expected_return_time,
@@ -53,9 +77,10 @@ def track_tool_usage(tool_id, user, checkout_time, expected_return_time):
     usage_log.append(usage_entry)
     return usage_entry
 
-def schedule_maintenance(tool_id, maintenance_type, scheduled_date):
-    """Schedule maintenance for a tool."""
-    if tool_id not in tools_db:
+def schedule_maintenance(identifier, maintenance_type, scheduled_date):
+    """Schedule maintenance for a tool using either name or ID."""
+    tool_id = find_tool_by_name_or_id(identifier)
+    if not tool_id:
         raise ValueError("Tool not found.")
 
     maintenance_entry = {
@@ -71,9 +96,12 @@ def list_tools():
     if not tools_db:
         print("No tools found.")
         return
-    print("Listing all tools:")
+    print("\nListing all tools:")
+    print("-" * 80)
+    print(f"{'ID':<6} {'Name':<15} {'Category':<15} {'Condition':<10} {'Serial Number':<12}")
+    print("-" * 80)
     for tool_id, tool in tools_db.items():
-        print(f"ID: {tool_id}, Name: {tool.name}, Category: {tool.category}, Condition: {tool.current_condition}")
+        print(f"{tool_id:<6} {tool.name:<15} {tool.category:<15} {tool.current_condition:<10} {tool.serial_number:<12}")
 
 def initialize_default_tools():
     """Adds 5 default tools to the database."""
@@ -86,7 +114,8 @@ def initialize_default_tools():
     ]
     for name, category, serial_number, purchase_date, condition in default_tools:
         try:
-            add_tool(name, category, serial_number, purchase_date, condition)
+            tool_id = add_tool(name, category, serial_number, purchase_date, condition)
+            print(f"Added default tool: {name} (ID: {tool_id})")
         except ValueError as e:
             print(f"Failed to add default tool: {e}")
 
@@ -99,6 +128,7 @@ def display_menu():
     print("4. Schedule Maintenance")
     print("5. List Tools")
     print("6. Exit")
+    print('Note: You can use either tool name or ID for options 2, 3, and 4')
     print('Type "exit" at any prompt to quit.\n')
 
 def main():
@@ -133,20 +163,20 @@ def main():
                 tool_id = add_tool(name, category, serial_number, purchase_date, condition)
                 print(f"Tool added successfully with ID: {tool_id}")
             except ValueError as e:
-                print(e)
+                print(f"Error: {e}")
 
         elif choice == "2":
-            tool_id = input("Enter tool ID to remove: ").strip()
-            if tool_id.lower() == "exit":
+            identifier = input("Enter tool name or ID to remove: ").strip()
+            if identifier.lower() == "exit":
                 break
             try:
-                remove_tool(tool_id)
+                remove_tool(identifier)
             except ValueError as e:
-                print(e)
+                print(f"Error: {e}")
 
         elif choice == "3":
-            tool_id = input("Enter tool ID: ").strip()
-            if tool_id.lower() == "exit":
+            identifier = input("Enter tool name or ID: ").strip()
+            if identifier.lower() == "exit":
                 break
             user = input("Enter user name: ").strip()
             if user.lower() == "exit":
@@ -158,14 +188,14 @@ def main():
             if expected_return_time.lower() == "exit":
                 break
             try:
-                usage_entry = track_tool_usage(tool_id, user, checkout_time, expected_return_time)
+                usage_entry = track_tool_usage(identifier, user, checkout_time, expected_return_time)
                 print(f"Tool usage logged: {usage_entry}")
             except ValueError as e:
-                print(e)
+                print(f"Error: {e}")
 
         elif choice == "4":
-            tool_id = input("Enter tool ID: ").strip()
-            if tool_id.lower() == "exit":
+            identifier = input("Enter tool name or ID: ").strip()
+            if identifier.lower() == "exit":
                 break
             maintenance_type = input("Enter maintenance type: ").strip()
             if maintenance_type.lower() == "exit":
@@ -174,10 +204,10 @@ def main():
             if scheduled_date.lower() == "exit":
                 break
             try:
-                maintenance_entry = schedule_maintenance(tool_id, maintenance_type, scheduled_date)
+                maintenance_entry = schedule_maintenance(identifier, maintenance_type, scheduled_date)
                 print(f"Maintenance scheduled: {maintenance_entry}")
             except ValueError as e:
-                print(e)
+                print(f"Error: {e}")
 
         elif choice == "5":
             list_tools()
