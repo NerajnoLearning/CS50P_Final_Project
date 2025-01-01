@@ -7,7 +7,7 @@ usage_log = []  # List of usage entries
 
 class Tool:
     def __init__(self, name, category, serial_number, purchase_date, condition):
-        self.tool_id = None  # Unique identifier, assigned later
+        self.tool_id = None  # Unique identifier, is assigned later
         self.name = name
         self.category = category
         self.serial_number = serial_number
@@ -103,7 +103,7 @@ def display_menu():
 
 def main():
     """Main entry point of the program."""
-    print("Welcome to the Tool Management System!")
+    print("Welcome to Kapul - A simple Tool Management System.")
     initialize_default_tools()
 
     while True:

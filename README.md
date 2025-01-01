@@ -8,7 +8,7 @@ A Python-based system for managing and tracking tools in an organization. This a
 - Schedule and monitor tool maintenance
 - List all tools in the system
 - Automatic initialization with default tools
-- Predictive maintenance scoring system
+- Predictive maintenance scoring system 
 
 ## Installation
 
